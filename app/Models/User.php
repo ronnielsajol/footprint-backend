@@ -6,11 +6,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -21,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -44,5 +46,37 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    // Relationships
+    public function events()
+    {
+        return $this->hasMany(Event::class, 'created_by');
+    }
+
+    public function vips()
+    {
+        return $this->hasMany(Vip::class, 'created_by');
+    }
+
+    public function ascDirectives()
+    {
+        return $this->hasMany(AscDirective::class, 'created_by');
+    }
+
+    public function ascParticipations()
+    {
+        return $this->hasMany(AscParticipation::class, 'created_by');
+    }
+
+    // Helper methods
+    public function isSuperadmin(): bool
+    {
+        return $this->role === 'superadmin';
+    }
+
+    public function isPolAdmin(): bool
+    {
+        return $this->role === 'pol_admin';
     }
 }

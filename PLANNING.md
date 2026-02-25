@@ -366,3 +366,50 @@ All API responses follow this structure:
 - Consider pagination for list endpoints (default: 15 items per page)
 - Add search/filter capabilities to list endpoints
 - Use Laravel Resources for consistent API responses
+
+---
+
+## ⚠️ IMPORTANT UPDATE - February 2025
+
+**This planning document reflects the initial design concept. The system has been restructured to split events into two distinct deployment types with specialized schemas.**
+
+### Major Changes Implemented:
+
+1. **Split Event Model**: The unified `events` table has been replaced with two specialized tables:
+    - `pol_deployments` (23 fields) - For POL deployment tracking with donation management
+    - `w_asc_deployments` (19 fields) - For Women ASC deployments with activity tracking
+
+2. **Enhanced Features**:
+    - Multiple officer support for W ASC deployments
+    - JSON array for POL activities (bullet points)
+    - Boolean attendance flags (has_socials, has_sortie, asc_attended, llc_attended, psc_attended)
+    - Polymorphic ASC relationships (directives and participations work with both deployment types)
+    - Separate VIP pivot tables for each deployment type
+
+3. **Updated API Structure**:
+    - `/api/v1/pol-deployments` - POL deployment endpoints
+    - `/api/v1/w-asc-deployments` - W ASC deployment endpoints with officer management
+    - `/api/v1/{deploymentType}/{deploymentId}/asc-directives` - Polymorphic ASC endpoints
+    - `/api/v1/{deploymentType}/{deploymentId}/asc-participation` - Polymorphic participation endpoints
+
+### Updated Documentation:
+
+Please refer to these documents for the current implementation:
+
+- **API_DOCS_NEW.md** - Complete API reference with all endpoints and validation rules
+- **IMPLEMENTATION_SUMMARY_NEW.md** - Detailed implementation summary with all code changes
+- **RESTRUCTURE_PLAN.md** - Original restructure planning document (archived)
+
+### Migration Path:
+
+If you have existing data in the old `events` table:
+
+1. Review IMPLEMENTATION_SUMMARY_NEW.md for migration strategy
+2. Create data migration script to transform old events to new deployment tables
+3. Map VIP associations to new pivot tables
+4. Update ASC records to polymorphic structure
+
+**Status**: ✅ Implementation Complete (February 2025)  
+**Testing**: User responsibility per request
+
+---

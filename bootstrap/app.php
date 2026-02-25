@@ -14,9 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
+        // Token-based authentication - no cookie/session middleware needed
 
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,

@@ -1,0 +1,59 @@
+name: Pull  to staging server
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Start ssh-agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_SSH_KEY }}
+
+      - name: Trust host
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.PROD_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Pull + tidy + (optional) Laravel housekeeping
+        env:
+          PHP_BIN: ${{ secrets.PHP_BIN }} # e.g. /usr/local/bin/php
+          TERM: dumb # quiets GoDaddy tput warnings
+        run: |
+          ssh -o SendEnv=TERM ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'EOF'
+          set -e
+          cd "${STAGING_REMOTE_PATH:-/home/jhtewsbw2mz0/public_html/footprint.be.asc-nest.org}"
+
+          # Ensure correct remote points to your alias host (github.com-api)
+          if ! git remote -v | grep -q 'git@github.com:ronnielsajol/footprint-backend.git'; then
+            git remote remove origin 2>/dev/null || true
+            git remote add origin git@github.com:ronnielsajol/footprint-backend.git
+          fi
+
+          # Hard update to match origin/dev; no merges
+          git fetch origin dev
+          git checkout -B dev origin/dev
+          git reset --hard origin/dev
+
+          # Remove stale/untracked files; keep uploads/vendor/.env
+          git clean -fdx -e storage -e vendor -e .env
+
+          # Composer if available on server
+          if [ -f composer.phar ]; then
+            ${PHP_BIN:-/usr/local/bin/php} composer.phar install --no-dev --prefer-dist --optimize-autoloader
+          elif command -v composer >/dev/null 2>&1; then
+            composer install --no-dev --prefer-dist --optimize-autoloader
+          fi
+
+          # Laravel optional steps (safe if DB schema unchanged)
+          ${PHP_BIN:-/usr/local/bin/php} artisan migrate --force || true
+          ${PHP_BIN:-/usr/local/bin/php} artisan config:cache
+          ${PHP_BIN:-/usr/local/bin/php} artisan route:cache
+          ${PHP_BIN:-/usr/local/bin/php} artisan queue:restart || true
+          ${PHP_BIN:-/usr/local/bin/php} artisan db:seed --class=PermissionsSeeder --force || true
+          EOF
