@@ -48,6 +48,13 @@ class Vip extends Model
             ->withTimestamps();
     }
 
+    public function events()
+    {
+        return $this->belongsToMany(Event::class, 'event_vips')
+            ->withPivot('remarks')
+            ->withTimestamps();
+    }
+
     // Scopes
     public function scopeSearch($query, $search)
     {
